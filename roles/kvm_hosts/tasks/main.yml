@@ -1,0 +1,27 @@
+---
+# tasks file for hypervisors
+
+- name: Install packages on hosts
+  yum:
+    name: "{{ packages }}"
+  vars:
+    packages:
+    - libguestfs
+    - libguestfs-tools
+    - openvswitch
+    - virt-install
+    - kvm
+    - libvirt
+    - libvirt-python
+    - python-virtinst
+    
+
+- name: Start libvirt
+  systemd:
+    state: started
+    name: libvirtd
+
+- name: Start openvswitch
+  systemd:
+    state: started
+    name: libvirtd
