@@ -1,0 +1,8 @@
+---
+- hosts: hub_vxlan
+  tasks:
+  
+  - name: Get {{ vmx_image_name }}
+    get_url:
+      url: "{{ vmx_download_url }}/{{ vmx_image_name }}"
+      dest: /root/{{ vmx_image_name }}

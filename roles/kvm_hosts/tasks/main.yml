@@ -1,5 +1,5 @@
 ---
-# tasks file for hypervisors
+# Package installation and daemon start
 
 - name: Install packages on hosts
   yum:
@@ -8,20 +8,67 @@
     packages:
     - libguestfs
     - libguestfs-tools
-    - openvswitch
+    - libguestfs-tools
+    - centos-release-openstack-ocata
     - virt-install
-    - kvm
     - libvirt
     - libvirt-python
-    - python-virtinst
     
+- name: install KVM
+  yum:
+    name: qemu-kvm
+    state: latest
 
+- name: Install openvswitch
+  yum:
+    name: openvswitch
+    state: latest
+    
 - name: Start libvirt
   systemd:
     state: started
     name: libvirtd
+    enabled: True
 
 - name: Start openvswitch
   systemd:
     state: started
-    name: libvirtd
+    name: openvswitch
+    enabled: True
+
+- name: Stop iptables
+  systemd:
+    state: stopped
+    name: firewalld
+    enabled: False
+
+# Enable nested virtualisation
+
+- name: copy kvm-nested.conf for nest virtualisation
+  copy:
+    src: 'kvm-nested.conf'
+    dest: '/etc/modprobe.d/kvm-nested.conf'
+
+- name: remove kvm_intel module
+  modprobe:
+    name: kvm_intel
+    state: absent
+
+- name: restart kvm_intel module
+  modprobe:
+    name: kvm_intel
+    state: present
+  
+- name: check nested virtualisation
+  shell: cat /sys/module/kvm_intel/parameters/nested
+  register: out
+
+- debug: var=out.stdout_lines
+
+# download vmx image
+
+- name: Get {{ vmx_image_name }}
+  get_url:
+    url: "{{ vmx_download_url }}/{{ vmx_image_name }}"
+    dest: /root/{{ vmx_image_name }}
+
