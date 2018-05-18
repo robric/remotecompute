@@ -1,8 +1,89 @@
 ---
-- hosts: hub_vxlan
+- hosts: local
+  vars:
+    ansible_connection: ssh 
+    ansible_ssh_user: root
+    ansible_ssh_pass: root123
+    
+
+    listvar1:
+    - 'a'
+    - 'b'
+    - 'c'
   tasks:
-  
-  - name: Get {{ vmx_image_name }}
-    get_url:
-      url: "{{ vmx_download_url }}/{{ vmx_image_name }}"
-      dest: /root/{{ vmx_image_name }}
+    - debug: var=topology.networks
+    - name: Create OVS bridges on KVM hosts
+      template:
+        src: "templates/vxlan_bridge.j2"
+        dest: "/etc/sysconfig/network-scripts/ifcfg-br-{{ item.key }}"
+      with_dict: "{{ topology.networks }}"
+
+    
+#
+#    - name: Create the list of networks
+#      set_fact:
+#        list_networks: "{{ list_networks | default ([]) + [item.key] }}"
+#      with_dict: "{{ topology.networks }}"
+#
+#    - name: Create the list of VMs
+#      set_fact:
+#        list_vms: "{{ list_vms | default ([]) + [item.key] }}"
+#      with_dict: "{{ topology.vms }}"
+#    
+#    
+#    - name: Create the list of remote ips
+#      set_fact:
+#        list_remote_ip: "{{ list_remote_ip | default ([]) + [hostvars[item].ansible_host] }}"
+#      with_items: "{{ groups.spoke_vxlan }}"
+#      
+#    - debug: var=list_remote_ip
+#    
+#    - name: Create test directory
+#      template:
+#        src: "templates/vxlan_interface.conf.j2"
+#        dest: "/drive/remotecompute/interface-{{ item[0] }}-{{ item[1] }}.conf"
+#      with_nested:
+#        - "{{ topology.networks }}"
+#        - "{{ groups.spoke_vxlan }}"
+# 
+
+
+#  - debug: var=topology.networks
+#  - debug: var=list_vms
+#
+#  - debug:
+#      msg: "{{ list_networks.0 }}"
+#      
+#  - debug:
+#      msg: "{{ topology.networks[list_networks.0].ip_subnet }}"
+#
+#  - name: Create list of VXLAN parameters
+#    set_fact:
+#      if_params_list: {'if_name':'test','bridge_name':'lan-dc','remote_ip':'10.0.0.1','vni':'1000'}
+#
+#  - name: get vxlan hub 
+#    set_fact:
+#      hub_vxlan_host: "{{ groups.hub_vxlan.0 }}"
+#      
+#  - debug: var=hostvars['{{ hub_vxlan_host }}'].ansible_host
+#  - debug: var=hostvars['5b5s38'].ansible_host
+#  
+#  - name: get vxlan hub IP address
+#    set_fact:
+#      remote_ip: "{{ hostvars[groups.hub_vxlan.0].ansible_host }}"
+##    with_items:
+##      - "{{ groups.hub_vxlan.0 }}"
+#      
+#  - debug: var=remote_ip
+#   
+#  - name: Create test directory
+#    template:
+#      src: "templates/vxlan_interface.conf.j2"
+#      dest: "/drive/remotecompute/interface-{{ item.key }}.conf"
+#    with_dict: "{{ topology.networks }}"
+#   
+#
+#  - name: Create VXLAN interface file
+#    set_fact:
+#      dict_vxlan: "[
+#      remote_ip

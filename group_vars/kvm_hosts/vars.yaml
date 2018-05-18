@@ -1,0 +1,173 @@
+# credentials to connect to kvm hosts
+
+ansible_connection: ssh 
+ansible_ssh_user: root
+ansible_ssh_pass: c0ntrail123
+
+vmx_download_url: http://10.84.5.120/cs-customer/images/vmx
+vmx_image_name: vmx-nested-18.1R1.9-9.qcow2
+
+# networks (defined globally even if local scope)
+
+topology:
+  networks:
+    lan-dc:
+      vni: 100
+      ip_subnet: 192.168.100.0/24
+    lan-p1:
+      vni: 101
+      ip_subnet: 192.168.101.0/24
+    lan-p2:
+      vni: 102
+      ip_subnet: 192.168.102.0/24
+    wan-dc-p1-1:
+      vni: 1000
+      ip_subnet: 192.168.1.0/30
+    wan-dc-p1-2:
+      vni: 1004
+      ip_subnet: 192.168.1.4/30
+    wan-dc-p2-1:
+      vni: 1008
+      ip_subnet: 192.168.1.8/30
+    wan-dc-p2-2:
+      vni: 1012
+      ip_subnet: 192.168.1.12/30
+    wan-p1-p1:
+      vni: 1016
+      ip_subnet: 192.168.1.16/30
+    wan-dc-dc:
+      vni: 1020
+      ip_subnet: 192.168.1.20/30
+  vms:
+    vmx-dc-1:
+      hv-index: 1
+      flavor: vmx-nested
+      interfaces:
+        if-dc-1-mgt:
+          mac: 0000:FF01:0101
+          ip-address: 192.128.122.101
+        if-dc-1-fpc-1:
+          network: lan-dc
+        if-dc-1-fpc-2:
+          network: wan-dc-p1-1
+        if-dc-1-fpc-3:
+          network: wan-dc-dc
+        if-dc-1-fpc-4:
+          network: wan-dc-p2-1
+    vmx-dc-2:
+      hv-index: 2
+      flavor: vmx-nested
+      interfaces:
+        if-dc-2-mgt:
+          mac: 0000:FF01:0102
+          ip-address: 192.128.122.102
+        if-dc-2-fpc-1:
+          network: lan-dc
+        if-dc-2-fpc-2:
+          network: wan-dc-p1-2
+        if-dc-2-fpc-3:
+          network: wan-dc-dc
+        if-dc-2-fpc-4:
+          network: wan-dc-p2-2
+    vmx-pop1-1:
+      hv-index: 1
+      flavor: vmx-nested
+      interfaces:
+        if-pop1-1-mgt:
+          mac: 0000:FF01:0103
+          ip-address: 192.128.122.103
+        if-pop1-1-fpc-1:
+          network: lan-p1
+        if-pop1-1-fpc-2:
+          network: wan-dc-p1-1
+        if-pop1-1-fpc-3:
+          network: wan-p1-p1
+    vmx-pop1-2:
+      hv-index: 1
+      flavor: vmx-nested
+      interfaces:
+        if-pop1-2-mgt:
+          mac: 0000:FF01:0104
+          ip-address: 192.128.122.104
+        if-pop1-2-fpc-1:
+          network: lan-p1
+        if-pop1-2-fpc-2:
+          network: wan-dc-p1-2
+        if-pop1-2-fpc-3:
+          network: wan-p1-p1
+    vmx-pop2-1:
+      hv-index: 1
+      flavor: vmx-nested
+      interfaces:
+        if-pop2-1-mgt:
+          mac: 0000:FF01:0105
+          ip-address: 192.128.122.105
+        if-pop2-1-fpc-1:
+          network: lan-p2
+        if-pop2-1-fpc-2:
+          network: wan-dc-p2-1
+        if-pop2-1-fpc-3:
+          network: wan-dc-p2-2
+    all-cont-dc-1:
+      hv-index: 2
+      flavor: fl-all-control
+      interfaces:
+        if-cont-1-mgt:
+          mac: 0000:FF01:0106
+          ip-address: 192.128.122.106
+        if-cont-1:
+          network: lan-dc
+    all-cont-dc-2:
+      hv-index: 2
+      flavor: fl-all-control
+      interfaces:
+        if-cont-2-mgt:
+          mac: 0000:FF01:0107
+          ip-address: 192.128.122.107
+        if-cont-2:
+          network: lan-dc
+    all-cont-dc-3:
+      hv-index: 2
+      flavor: fl-all-control
+      interfaces:
+        if-cont-3-mgt:
+          mac: 0000:FF01:0108
+          ip-address: 192.128.122.108
+        if-cont-3:
+          network: lan-dc
+    cont-pop1-1:
+      hv-index: 2
+      flavor: fl-control-only
+      interfaces:
+        if-cont-pop1-1-mgt:
+          mac: 0000:FF01:0109
+          ip-address: 192.128.122.109
+        if-cont-pop1-1:
+          network: lan-dc
+    cont-pop1-2:
+      hv-index: 2
+      flavor: fl-control-only
+      interfaces:
+        if-cont-pop1-2-mgt:
+          mac: 0000:FF01:0110
+          ip-address: 192.128.122.110
+        if-cont-pop1-2:
+          network: lan-dc
+    cont-pop2-1:
+      hv-index: 2
+      flavor: fl-control-only
+      interfaces:
+        if-cont-pop2-1-mgt:
+          mac: 0000:FF01:0111
+          ip-address: 192.128.122.111
+        if-cont-pop2-1:
+          network: lan-dc
+    cont-pop2-2:
+      hv-index: 2
+      flavor: fl-control-only
+      interfaces:
+        if-cont-pop2-2-mgt:
+          mac: 0000:FF01:0112
+          ip-address: 192.128.122.112
+        if-cont-pop2-2:
+          network: lan-dc

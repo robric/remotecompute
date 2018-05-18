@@ -13,6 +13,8 @@
     - virt-install
     - libvirt
     - libvirt-python
+    - net-tools
+    - tcpdump
     
 - name: install KVM
   yum:
@@ -63,7 +65,11 @@
   shell: cat /sys/module/kvm_intel/parameters/nested
   register: out
 
-- debug: var=out.stdout_lines
+#- debug: var=out.stdout_lines
+#  fail:
+#    msg: "CONTRAIL_SCHEDULER can only be set to 'compose' or 'k8s'"
+#  when: out not in ['compose', 'k8s']
+
 
 # download vmx image
 
@@ -71,4 +77,10 @@
   get_url:
     url: "{{ vmx_download_url }}/{{ vmx_image_name }}"
     dest: /root/{{ vmx_image_name }}
+
+- name: Create OVS bridges on KVM hosts
+  template:
+    src: "templates/vxlan_bridge.j2"
+    dest: "/etc/sysconfig/network-scripts/ifcfg-br-{{ item.key }}"
+  with_dict: "{{ topology.networks }}"
 

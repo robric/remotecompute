@@ -1,0 +1,10 @@
+---
+# tasks file for spoke_vxlan
+
+- name: Create the vxlan interfaces toward hub vxlan for all spoke vxlan 
+  template:
+    src: "templates/vxlan_interface.j2"
+    dest: "/etc/sysconfig/network-scripts/ifcfg-{{ item[0] }}-{{ item[1] }}"
+  with_nested:
+    - "{{ topology.networks }}"
+    - "{{ groups.hub_vxlan }}"

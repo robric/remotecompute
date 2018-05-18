@@ -1,0 +1,9 @@
+DEVICE=vx-{{ topology.networks[item[0]].vni }}-{{ item[1] }}
+ONBOOT=yes
+DEVICETYPE=ovs
+TYPE=OVSTunnel
+OVS_BRIDGE=br-{{ item[0] }}
+OVS_TUNNEL_TYPE=vxlan
+OVS_TUNNEL_OPTIONS="options:remote_ip={{ hostvars[item[1]].ansible_host }} option:key={{ topology.networks[item[0]].vni }} options:dst_port=4789"
+BOOTPROTO=none
+NAME=vx-{{ topology.networks[item[0]].vni }}-{{ item[1] }}

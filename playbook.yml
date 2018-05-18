@@ -2,3 +2,11 @@
 - hosts: kvm_hosts
   roles:
      - kvm_hosts
+
+- hosts: hub_vxlan
+  roles:
+     - hub_vxlan
+
+- hosts: spoke_vxlan
+  roles:
+     - spoke_vxlan
