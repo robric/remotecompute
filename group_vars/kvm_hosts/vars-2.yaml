@@ -1,0 +1,210 @@
+# credentials to connect to kvm hosts
+
+ansible_connection: ssh 
+ansible_ssh_user: root
+ansible_ssh_pass: c0ntrail123
+
+vmx_download_url: http://10.84.5.120/cs-customer/images/vmx
+vmx_image_name: vmx-nested-18.1R1.9-9.qcow2
+os_download_url: https://cloud.centos.org/centos/7/images/
+os_image_name: CentOS-7-x86_64-GenericCloud-1710.qcow2
+
+# networks (defined globally even if local scope)
+
+topology:
+  networks:
+    lan-dc:
+      vni: 100
+      ip_subnet: 192.168.100.0/24
+    lan-p1:
+      vni: 101
+      ip_subnet: 192.168.101.0/24
+    lan-p2:
+      vni: 102
+      ip_subnet: 192.168.102.0/24
+    wan-dc-p1-1:
+      vni: 1000
+      ip_subnet: 192.168.1.0/30
+    wan-dc-p1-2:
+      vni: 1004
+      ip_subnet: 192.168.1.4/30
+    wan-dc-p2-1:
+      vni: 1008
+      ip_subnet: 192.168.1.8/30
+    wan-dc-p2-2:
+      vni: 1012
+      ip_subnet: 192.168.1.12/30
+    wan-p1-p1:
+      vni: 1016
+      ip_subnet: 192.168.1.16/30
+    wan-dc-dc:
+      vni: 1020
+      ip_subnet: 192.168.1.20/30
+#
+#    Semantic for topology.instances
+#
+#    Define Virtual Machine instances with the following structure:
+#
+#      name: VM-NAME:           ---> Name of the instances (must be unique)
+#      vm_id: VM-ID             ---> Two-digit vm-id unique vm-id
+#                                    It is used for interface names, telnet console port, MAC and Management IP 
+#      host_id: HOST-ID         ---> HOST-ID (0-99) is the id defined in the inventory "hostname ansible_host=X.Y.Z.W id=HOST-ID" 
+#                                    this defines the host on which the VM will be spawned
+#      flavor: fl-vmx-nested    ---> Flavor defined in topology.vms.flavors (identified by names vmx / comp / cont ...)
+#      interfaces:              ---> List of interfaces
+#        management:            ---> Mapping of Management interface to libvirt network
+#          - default                     Interface naming is vm-VM_ID-mgt
+#        user:                  ---> Mapping of data plane interfaces 
+#          0: network1                   Interface naming is vm-VM_ID-eth-Index, where index is define in the below mapping 
+#          1: network2                   (e.g. 1: network2 has interface vm-01-eth-01 ) 
+#          2: network3                   Note that on VMX starting indexing from 0 maps index X to ge-0/0/X
+#          etc.
+#
+#
+            
+  instances:
+    - name: vmx-dc-1
+      vm_id: 01
+      host_id: 1
+      flavor: fl-vmx-nested
+      interfaces:
+        management: default
+        user:  #name vm-Id_VM-eth-Id_IF # vm-00-eth-02
+          0: lan-dc
+          1: wan-dc-p1-1
+          2: wan-dc-dc
+          3: wan-dc-p2-1
+    - name: vmx-dc-2
+      vm_id: 02
+      host_id: 1
+      flavor: fl-vmx-nested
+      interfaces:
+        management: default
+        user:
+          0: lan-dc
+          1: wan-dc-p1-2
+          2: wan-dc-dc
+          3: wan-dc-p2-2
+    - name: vmx-pop1-1
+      vm_id: 11
+      host_id: 1
+      flavor: fl-vmx-nested
+      interfaces:
+        management: default
+        user:
+          0: lan-p1
+          1: wan-dc-p1-1
+          2: wan-p1-p1
+    - name: vmx-pop1-2
+      vm_id: 12
+      host_id: 1
+      flavor: fl-vmx-nested
+      interfaces:
+        management: default
+        user:
+          0: lan-p1
+          1: wan-dc-p1-2
+          2: wan-p1-p1
+    - name: vmx-pop2-1
+      vm_id: 21
+      host_id: 1
+      flavor: fl-vmx-nested
+      interfaces:
+        management: default
+        user:
+          0: lan-p2
+          1: wan-dc-p2-1
+          2: wan-dc-p2-2
+    - name: all-cont-dc-1
+      vm_id: 51
+      host_id: 2
+      flavor: fl-all-control
+      interfaces:
+        management: default
+        user:
+          0: lan-dc
+    - name: all-cont-dc-2
+      vm_id: 52
+      host_id: 2
+      flavor: fl-all-control
+      interfaces:
+        management: default
+        user:
+          0: lan-dc
+    - name: all-cont-dc-3
+      vm_id: 53
+      host_id: 2
+      flavor: fl-control-only
+      interfaces:
+        management: default
+        user:
+          0: lan-dc
+    - name: cont-pop1-1
+      vm_id: 61
+      host_id: 2
+      flavor: fl-control-only
+      interfaces:
+        management: default
+        user:
+          0: lan-dc
+    - name: cont-pop1-2
+      vm_id: 62
+      host_id: 2
+      flavor: fl-control-only
+      interfaces:
+        management: default
+        user:
+          0: lan-dc
+    - name: cont-pop2-1
+      vm_id: 71
+      host_id: 2
+      flavor: fl-control-only
+      interfaces:
+        management: default
+        user:
+          0: lan-dc
+    - name: comp-pop1-1
+      vm_id: 65
+      host_id: 1
+      flavor: fl-compute-nested-tiny
+      interfaces:
+        management: default
+        user:
+          0: lan-p1
+    - name: comp-pop2-1
+      vm_id: 75
+      host_id: 1
+      flavor: fl-compute-nested-tiny
+      interfaces:
+        management: default
+        user:
+          0: lan-p2
+  flavors:
+    fl-vmx-nested:
+      vcpus: 4
+      ram: 16
+      disk: 20
+    fl-all-control:
+      vcpus: 7
+      ram: 16
+      disk: 20
+    fl-control-only:
+      vcpus: 2
+      ram: 8
+      disk: 20
+    fl-compute-nested-tiny:
+      vcpus: 2
+      ram: 4
+      disk: 20
+    fl-compute-nested-small:
+      vcpus: 4
+      ram: 16
+      disk: 20
+    fl-compute-nested-medium:
+      vcpus: 8
+      ram: 32
+      disk: 20
+    fl-compute-nested-big:
+      vcpus: 16
+      ram: 64
+      disk: 20

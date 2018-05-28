@@ -1,0 +1,85 @@
+---
+# tasks file for define_vms
+
+
+#- name: Create the list of VMs
+#  set_fact:
+#    list_vms: "{{ list_vms | default ([]) + [item.name:item.vm_id] }}"
+#  with_dict: "{{ topology.instances }}"
+#
+#- name: Create the list of VMs
+#  set_fact:
+#    list_vms: "{{ list_vms | default ([]) + [item.key] }}"
+#  with_dict: "{{ topology.vms }}"
+#  
+#
+#      Define libvirt networks
+#
+
+#- debug:
+#    msg: "checking hostname {{ ansible_hostname }} -- {{ id }}"
+#  
+#- name: Define libvirt networks
+#  virt_net:
+#    command: define
+#    name: br-{{ item.key }}
+#    xml: '{{ lookup("template", "templates/bridge.xml.j2") }}'
+#  with_dict: "{{ topology.networks }}"
+#
+#- name: Start libvirt networks
+#  virt_net: 
+#    command: create
+#    name: br-{{ item.key }}
+#    state: active
+#  with_dict: "{{ topology.networks }}"
+#
+#- name: Apply auto-start to libvirt networks
+#  virt_net: 
+#    autostart: yes
+#    name: br-{{ item.key }}
+#  with_dict: "{{ topology.networks }}"
+#  
+  
+#
+#       Spawn VMX instances on host_id based on virsh-vmx.xml.j2 template
+#
+
+- name: Ansible prepare VMX disks based on local VMX copy
+  copy:
+    src: /tmp/{{ vmx_image_name }}
+    dest: /var/lib/libvirt/images/{{ item.name }}-{{ vmx_image_name }}
+    remote_src: yes
+  with_items: "{{ topology.instances }}"
+  when: '"vmx" in item.flavor and item.host_id== id'
+
+- name: Boot VMX images
+  virt:
+      name: "{{ item.name }}"
+      command: define
+      xml: "{{ lookup('template', 'templates/virsh-vmx.xml.j2') }}"
+  with_items: "{{ topology.instances }}"
+  when: '"vmx" in item.flavor and item.host_id== id'
+
+#
+#       Spawn Linux instances
+#
+
+- name: Ansible prepare VMX disks based on local VMX copy
+  copy:
+    src: /tmp/{{ vmx_image_name }}
+    dest: /var/lib/libvirt/images/{{ item.name }}-{{ vmx_image_name }}
+    remote_src: yes
+  with_items: "{{ topology.instances }}"
+  when: '"vmx" in item.flavor and item.host_id== id'
+
+- name: Boot VMX images
+  virt:
+      name: "{{ item.name }}"
+      command: define
+      xml: "{{ lookup('template', 'templates/virsh-vmx.xml.j2') }}"
+  with_items: "{{ topology.instances }}"
+  when: '"vmx" in item.flavor and item.host_id== id'
+
+
+#  when: topology.vms
+

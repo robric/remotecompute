@@ -1,0 +1,125 @@
+---
+#
+#       tasks for server_install role
+#
+
+#
+#        Run some basic sanity checks such as make sure we have unique VM Names and Ids
+#
+
+- name: Make sure VM indentifiers are unique
+  assert:
+    that: >
+      topology.instances | map (attribute='vm_id') | list | count
+      ==
+      topology.instances | map (attribute='vm_id') | list | unique | count
+
+
+- name: Make sure VM names are unique
+  assert:
+    that: >
+      topology.instances | map (attribute='name') | list | count
+      ==
+      topology.instances | map (attribute='name') | list | unique | count
+
+# Package installation and daemon start
+
+- name: Install packages on hosts
+  yum:
+    name: "{{ packages }}"
+  vars:
+    packages:
+    - libguestfs
+    - libguestfs-tools
+    - libguestfs-tools
+    - centos-release-openstack-ocata
+    - virt-install
+    - libvirt
+    - libvirt-python
+    - net-tools
+    - tcpdump
+    - python-pip
+    - telnet
+    
+- name: install KVM
+  yum:
+    name: qemu-kvm
+    state: latest
+
+- name: Install openvswitch
+  yum:
+    name: openvswitch
+    state: latest
+    
+- name: Install python lxml module for ansible virt_net
+  pip:
+    name: lxml
+    
+- name: Start libvirt
+  systemd:
+    state: started
+    name: libvirtd
+    enabled: True
+
+- name: Stop iptables
+  systemd:
+    state: stopped
+    name: firewalld
+    enabled: False
+    
+- name: Start openvswitch
+  systemd:
+    state: started
+    name: openvswitch
+    enabled: True
+#
+#
+# Enable Nested virtualisation
+# 
+#
+- name: copy kvm-nested.conf for nest virtualisation
+  copy:
+    src: 'kvm-nested.conf'
+    dest: '/etc/modprobe.d/kvm-nested.conf'
+
+- name: remove kvm_intel module
+  modprobe:
+    name: kvm_intel
+    state: absent
+
+- name: restart kvm_intel module
+  modprobe:
+    name: kvm_intel
+    state: present
+  
+- name: check nested virtualisation
+  shell: cat /sys/module/kvm_intel/parameters/nested
+  register: out
+
+#
+#        Download VMX image to local folder
+#
+
+- name: Copy {{ vmx_image_name }} to local server 
+  get_url:
+    url: "{{ vmx_download_url }}/{{ vmx_image_name }}"
+    dest: /tmp/{{ vmx_image_name }}
+
+- name: Copy {{ os_image_name }} to local server 
+  get_url:
+    url: "{{ os_download_url }}/{{ os_image_name }}"
+    dest: /tmp/{{ os_image_name }}
+
+#
+#        Define OVS bridges on KVM hosts
+#
+
+- name: Create network scripts for OVS bridges on KVM hosts
+  template:
+    src: "templates/vxlan_bridge.j2"
+    dest: "/etc/sysconfig/network-scripts/ifcfg-br-{{ item.key }}"
+  with_dict: "{{ topology.networks }}"
+  
+
+
+
