@@ -1,0 +1,13 @@
+shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory
+Traceback (most recent call last):
+  File "/usr/bin/ansible-playbook", line 40, in <module>
+    import ansible.constants as C
+  File "/usr/lib/python2.7/site-packages/ansible/constants.py", line 104, in <module>
+    config = ConfigManager()
+  File "/usr/lib/python2.7/site-packages/ansible/config/manager.py", line 187, in __init__
+    self._config_file = find_ini_config_file()
+  File "/usr/lib/python2.7/site-packages/ansible/config/manager.py", line 150, in find_ini_config_file
+    path2 = unfrackpath("~/.ansible.cfg", follow=False)
+  File "/usr/lib/python2.7/site-packages/ansible/utils/path.py", line 47, in unfrackpath
+    basedir = os.getcwd()
+OSError: [Errno 2] No such file or directory

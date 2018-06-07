@@ -2,44 +2,99 @@
 # tasks file for define_vms
 
 
-#- name: Create the list of VMs
-#  set_fact:
-#    list_vms: "{{ list_vms | default ([]) + [item.name:item.vm_id] }}"
-#  with_dict: "{{ topology.instances }}"
 #
-#- name: Create the list of VMs
-#  set_fact:
-#    list_vms: "{{ list_vms | default ([]) + [item.key] }}"
-#  with_dict: "{{ topology.vms }}"
-#  
+#      Restart network manager to trigger network scripts
+#
+
+- name: Restart Network Manager
+  systemd:
+    state: restarted
+    name: network
+    enabled: True
+  async: 120
+  poll: 0
+  ignore_errors: yes
+
+- meta: clear_host_errors
+
+- pause:
+    minutes: 1
 #
 #      Define libvirt networks
 #
 
-#- debug:
-#    msg: "checking hostname {{ ansible_hostname }} -- {{ id }}"
-#  
-#- name: Define libvirt networks
-#  virt_net:
-#    command: define
-#    name: br-{{ item.key }}
-#    xml: '{{ lookup("template", "templates/bridge.xml.j2") }}'
-#  with_dict: "{{ topology.networks }}"
-#
-#- name: Start libvirt networks
-#  virt_net: 
-#    command: create
-#    name: br-{{ item.key }}
-#    state: active
-#  with_dict: "{{ topology.networks }}"
-#
-#- name: Apply auto-start to libvirt networks
-#  virt_net: 
-#    autostart: yes
-#    name: br-{{ item.key }}
-#  with_dict: "{{ topology.networks }}"
-#  
+- name: Define libvirt networks
+  virt_net:
+    command: define
+    name: br-{{ item.key }}
+    xml: '{{ lookup("template", "templates/bridge.xml.j2") }}'
+  with_dict: "{{ topology.networks }}"
+
+- name: Start libvirt networks
+  virt_net: 
+    command: create
+    name: br-{{ item.key }}
+    state: active
+  with_dict: "{{ topology.networks }}"
+
+- name: Apply auto-start to libvirt networks
+  virt_net: 
+    autostart: yes
+    name: br-{{ item.key }}
+  with_dict: "{{ topology.networks }}"
   
+
+
+#       Update default libvirt network with static DHCP entries for management to 
+#       get predictable management IP (192.168.122.VM_ID)
+#
+#
+#       FIXME virt_net is not working so far - shell call used instead -
+##
+#- name: Configure DHCP entries for management
+#  virt_net: 
+#    command: modify
+#    name: default
+#    state: active
+#    xml: '{{ lookup("template", "templates/default-dhcp-bind.xml.j2") }}'
+#
+#  Or try around this one
+#
+#    - name: Configure DHCP entries for management
+#      virt_net: 
+#        command: modify
+#        name: default
+#        state: active
+#        xml: "{{ item }}"
+#      with_items: "{{ dhcp_bind_list }}"
+#      
+#
+#
+#      So far shell call is implemented with the following:
+#     
+#      - Ignore "failed" in case of second pass of ansible script (host already defined)
+#      
+#      If VM_Id is changed and entries are already defined:
+#        - edit default libvirt properties virsh net-edit default
+#        - remove all host entries <host mac== blabla>
+#        - save (ESC-wq)
+#        - virsh net-destroy default / virsh net-restart default (VM not runnning)
+#
+#
+#
+
+
+- name: Create Host DHCP bindings with 
+  set_fact:
+    dhcp_bind_list: '{{ lookup("template", "templates/default-dhcp-bind.xml.j2")[:-1].split(",")}}'
+- debug: var=dhcp_bind_list
+
+- name: DHCP customization of default libvirt network
+  shell: "virsh net-update default add ip-dhcp-host '{{ item }}' --live --config"
+  with_items: "{{ dhcp_bind_list }}"
+  register: virsh_net
+  failed_when: "'existing dhcp host' not in virsh_net.stderr and virsh_net.rc==1 "
+      
 #
 #       Spawn VMX instances on host_id based on virsh-vmx.xml.j2 template
 #
@@ -49,14 +104,23 @@
     src: /tmp/{{ vmx_image_name }}
     dest: /var/lib/libvirt/images/{{ item.name }}-{{ vmx_image_name }}
     remote_src: yes
+    force: no
   with_items: "{{ topology.instances }}"
   when: '"vmx" in item.flavor and item.host_id== id'
 
-- name: Boot VMX images
+- name: Define VMX instance
   virt:
       name: "{{ item.name }}"
       command: define
       xml: "{{ lookup('template', 'templates/virsh-vmx.xml.j2') }}"
+  with_items: "{{ topology.instances }}"
+  when: '"vmx" in item.flavor and item.host_id== id'
+
+- name: Start VMX instances
+  virt:
+      name: "{{ item.name }}"
+      state: running
+      autostart: yes
   with_items: "{{ topology.instances }}"
   when: '"vmx" in item.flavor and item.host_id== id'
 
@@ -64,22 +128,34 @@
 #       Spawn Linux instances
 #
 
-- name: Ansible prepare VMX disks based on local VMX copy
+- name: Ansible prepare Linux disks based on local Linux copy
   copy:
-    src: /tmp/{{ vmx_image_name }}
-    dest: /var/lib/libvirt/images/{{ item.name }}-{{ vmx_image_name }}
+    src: /tmp/{{ os_image_name }}
+    dest: /var/lib/libvirt/images/{{ item.name }}-{{ os_image_name }}
     remote_src: yes
+    force: no
   with_items: "{{ topology.instances }}"
-  when: '"vmx" in item.flavor and item.host_id== id'
+  when: '"os" in item.flavor and item.host_id== id'
 
-- name: Boot VMX images
+- name: Define Linux Images
   virt:
       name: "{{ item.name }}"
       command: define
-      xml: "{{ lookup('template', 'templates/virsh-vmx.xml.j2') }}"
+      xml: "{{ lookup('template', 'templates/virsh-linux.xml.j2') }}"
   with_items: "{{ topology.instances }}"
-  when: '"vmx" in item.flavor and item.host_id== id'
+  when: '"os" in item.flavor and item.host_id== id'
 
+- name: Start Linux Instances
+  virt:
+      name: "{{ item.name }}"
+      state: running
+      autostart: yes
+  with_items: "{{ topology.instances }}"
+  when: '"os" in item.flavor and item.host_id== id'
 
-#  when: topology.vms
+- name: Creating Readme file with topology information (topology-readme.txt)
+  template:
+    src: 'templates/topology-recap.j2'
+    dest: './topology-readme.txt'
+        
 

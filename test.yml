@@ -1,7 +1,0 @@
----
-- hosts: hub_vxlan
-  tasks:
-  - openvswitch_bridge:
-      bridge: br-int-test
-      state: present
-      fail_mode: secure

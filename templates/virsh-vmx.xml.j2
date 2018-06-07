@@ -64,11 +64,11 @@
     <interface type="network">
       <source network="br-{{ net }}" />
       <model type="virtio"/>
-      <target dev='vm-{{ "%02d"|format(item.vm_id)}}-eth-{{ "%02d"|format(index)}}}}'/>
+      <target dev='vm-{{ "%02d"|format(item.vm_id)}}-eth-{{ "%02d"|format(index)}}'/>
     </interface>
 {% endfor %}
     <serial type="tcp">
-      <source mode="bind" host="127.0.0.1" service="40{{ "%02d"|format(item.vm_id) }}"/>
+      <source mode="bind" host="0.0.0.0" service="40{{ "%02d"|format(item.vm_id) }}"/>
       <protocol type="telnet"/>
     </serial>
   </devices>
