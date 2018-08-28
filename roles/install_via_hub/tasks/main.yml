@@ -1,0 +1,33 @@
+---
+#
+#       tasks for install_via_hub
+#
+
+- name: install git and ansible packages for contrail-ansible-deployer
+  yum:
+    name: "{{ packages }}"
+  vars:
+    packages:
+      - ansible-2.4.2.0
+      - git
+
+- git:
+    repo: "https://github.com/Juniper/contrail-ansible-deployer.git"
+    dest: /root/contrail-ansible-deployer
+    clone: yes
+    force: yes
+
+- name: Copy instance.yaml configuration file
+  copy:
+    src: 'config/instances-latest-remote-compute.yaml'
+    dest: '/root/contrail-ansible-deployer/config/instances.yaml'
+
+- name: Copy tools (kill all vms)
+  copy:
+    src: 'tools/virsh-kill-all.sh'
+    dest: '/root/contrail-ansible-deployer/'
+
+- name: Copy tools (commands for contrail ansible deployer)
+  copy:
+    src: 'tools/instal_commands.txt'
+    dest: '/root/contrail-ansible-deployer/'

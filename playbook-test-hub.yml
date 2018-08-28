@@ -1,0 +1,10 @@
+---
+
+
+# Install VMs
+
+- hosts: hub_vxlan
+  roles:
+     - hub_vxlan
+
+     
