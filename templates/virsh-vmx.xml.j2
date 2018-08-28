@@ -55,7 +55,7 @@
       <target dev="hda" bus="ide"/>
     </disk>
     <interface type="network">
-      <source network="{{ item.interfaces.management }}"/>
+      <source network="br-nat-mngt"/>
       <model type="virtio"/>
       <mac address='00:00:FF:AA:AA:{{ "%02d"|format(item.vm_id)}}'/>
       <target dev='vm-{{ "%02d"|format(item.vm_id)}}-mgt'/>

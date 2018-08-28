@@ -11,6 +11,7 @@ vmx_image_name: vmx-nested-18.1R1.9-9.qcow2
 # Direct access from Cloud:
 # os_download_url: https://cloud.centos.org/centos/7/images/
 #
+
 os_download_url: http://10.84.5.120/cs-customer/images
 os_image_name: CentOS-7-x86_64-GenericCloud-1710.qcow2
 
@@ -31,28 +32,27 @@ os_image_name: CentOS-7-x86_64-GenericCloud-1710.qcow2
 
 topology:
   networks:
-    lan-dc:
+# Hardcoded management Virtual Network
+    - name: management  
+      vni: 99
+    - name: lan-dc
       vni: 100
-      ip_subnet: 192.168.100.0/24
-    lan-p1:
+    - name: lan-p1
       vni: 101
-      ip_subnet: 192.168.101.0/24
-    lan-p2:
+    - name: lan-p2
       vni: 102
-      ip_subnet: 192.168.102.0/24
-    wan-dc-p1-1:
+    - name: wan-dc-p1-1
       vni: 1000
-    wan-dc-p1-2:
+    - name: wan-dc-p1-2
+      vni: 1001
+    - name: wan-dc-p2-1
+      vni: 1002
+    - name: wan-dc-p2-2
+      vni: 1003
+    - name: wan-p1-p1
       vni: 1004
-    wan-dc-p2-1:
-      vni: 1008
-    wan-dc-p2-2:
-      vni: 1012
-    wan-p1-p1:
-      vni: 1016
-    wan-dc-dc:
-      vni: 1020
-      
+    - name: wan-dc-dc
+      vni: 1005
 #
 #    Semantic for topology.instances
 #
@@ -81,7 +81,7 @@ topology:
       host_id: 1
       flavor: fl-vmx-nested
       interfaces:
-        management: default
+        management: management
         user:  #name vm-Id_VM-eth-Id_IF # vm-00-eth-02
           0: lan-dc
           1: wan-dc-p1-1
@@ -92,7 +92,7 @@ topology:
       host_id: 1
       flavor: fl-vmx-nested
       interfaces:
-        management: default
+        management: management
         user:
           0: lan-dc
           1: wan-dc-p1-2
@@ -103,7 +103,7 @@ topology:
       host_id: 1
       flavor: fl-vmx-nested
       interfaces:
-        management: default
+        management: management
         user:
           0: lan-p1
           1: wan-dc-p1-1
@@ -113,7 +113,7 @@ topology:
       host_id: 1
       flavor: fl-vmx-nested
       interfaces:
-        management: default
+        management: management
         user:
           0: lan-p1
           1: wan-dc-p1-2
@@ -123,7 +123,7 @@ topology:
       host_id: 1
       flavor: fl-vmx-nested
       interfaces:
-        management: default
+        management: management
         user:
           0: lan-p2
           1: wan-dc-p2-1
@@ -133,7 +133,7 @@ topology:
       host_id: 2
       flavor: fl-os-all-control
       interfaces:
-        management: default
+        management: management
         user:
           0: lan-dc
     - name: all-cont-dc-2
@@ -141,7 +141,7 @@ topology:
       host_id: 2
       flavor: fl-os-all-control
       interfaces:
-        management: default
+        management: management
         user:
           0: lan-dc
     - name: all-cont-dc-3
@@ -149,7 +149,7 @@ topology:
       host_id: 2
       flavor: fl-os-control-only
       interfaces:
-        management: default
+        management: management
         user:
           0: lan-dc
     - name: cont-pop1-1
@@ -157,7 +157,7 @@ topology:
       host_id: 2
       flavor: fl-os-control-only
       interfaces:
-        management: default
+        management: management
         user:
           0: lan-dc
     - name: cont-pop1-2
@@ -165,7 +165,7 @@ topology:
       host_id: 2
       flavor: fl-os-control-only
       interfaces:
-        management: default
+        management: management
         user:
           0: lan-dc
     - name: cont-pop2-1
@@ -173,7 +173,7 @@ topology:
       host_id: 2
       flavor: fl-os-control-only
       interfaces:
-        management: default
+        management: management
         user:
           0: lan-dc
     - name: cont-pop2-2
@@ -181,7 +181,7 @@ topology:
       host_id: 2
       flavor: fl-os-control-only
       interfaces:
-        management: default
+        management: management
         user:
           0: lan-dc
     - name: comp-pop1-1
@@ -189,7 +189,7 @@ topology:
       host_id: 1
       flavor: fl-os-compute-nested-tiny
       interfaces:
-        management: default
+        management: management
         user:
           0: lan-p1
     - name: comp-pop2-1
@@ -197,7 +197,7 @@ topology:
       host_id: 1
       flavor: fl-os-compute-nested-tiny
       interfaces:
-        management: default
+        management: management
         user:
           0: lan-p2
   flavors:

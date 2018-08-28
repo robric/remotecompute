@@ -2,8 +2,18 @@
 # tasks file for define_vms
 
 
+
+
 #
 #      Restart network manager to trigger network scripts
+#
+
+#
+# ==============  FIXME 
+#
+# add interface MTU settings / 
+# either increase MTU from physical (new variable)
+# or decrease MTU of bridges
 #
 
 - name: Restart Network Manager
@@ -23,30 +33,52 @@
 #      Define libvirt networks
 #
 
-- name: Define libvirt networks
+
+- name: Define libvirt networks for non management
   virt_net:
     command: define
-    name: br-{{ item.key }}
-    xml: '{{ lookup("template", "templates/bridge.xml.j2") }}'
-  with_dict: "{{ topology.networks }}"
+    name: br-{{ item.name }}
+    xml: '{{ lookup("template", "templates/libvirt-bridge.xml.j2") }}'
+  with_items: "{{ topology.networks }}"
+#  when: '"manage" not in item.name'
 
 - name: Start libvirt networks
   virt_net: 
     command: create
-    name: br-{{ item.key }}
+    name: br-{{ item.name }}
     state: active
-  with_dict: "{{ topology.networks }}"
+  with_items: "{{ topology.networks }}"
 
 - name: Apply auto-start to libvirt networks
   virt_net: 
     autostart: yes
-    name: br-{{ item.key }}
-  with_dict: "{{ topology.networks }}"
+    name: br-{{ item.name }}
+  with_items: "{{ topology.networks }}"
   
 
+#
+#   Defining veth to connect OVS and virsh NAT linux bridge 
+#
+#     ip link add dev vethb1 type veth peer name vethb2   
+#     brctl addif br-nat-mngt vethb1
+#     ovs-vsctl add-port br-management  vethb2
+#     ip link set up dev vethb2
+#     ip link set up dev vethb1
+#     
+#
+#       FIXME so far quick and dirty hack to attach NAT/DHCP to OVS bridges
+#
+#
+#- name: Linking Linux Bridge (NAT function) and OVS Bridge for management
+#  shell: "ovs-vsctl add-port br-management br-nat-mngt"
+#  register: ovs_out
+#
+#- debug: 
+#    msg: "ovs-vsctl output: {{ovs_out.stdout}}"
+#
 
 #       Update default libvirt network with static DHCP entries for management to 
-#       get predictable management IP (192.168.122.VM_ID)
+#       get predictable management IP (192.168.222.VM_ID)
 #
 #
 #       FIXME virt_net is not working so far - shell call used instead -
@@ -90,7 +122,7 @@
 - debug: var=dhcp_bind_list
 
 - name: DHCP customization of default libvirt network
-  shell: "virsh net-update default add ip-dhcp-host '{{ item }}' --live --config"
+  shell: "virsh net-update br-nat-mngt add ip-dhcp-host '{{ item }}' --live --config"
   with_items: "{{ dhcp_bind_list }}"
   register: virsh_net
   failed_when: "'existing dhcp host' not in virsh_net.stderr and virsh_net.rc==1 "
@@ -105,8 +137,8 @@
     dest: /var/lib/libvirt/images/{{ item.name }}-{{ vmx_image_name }}
     remote_src: yes
     force: no
-  with_items: "{{ topology.instances }}"
-  when: '"vmx" in item.flavor and item.host_id== id'
+  with_items: "{{ vmx_list }}"
+
 
 - name: Define VMX instance
   virt:
@@ -116,43 +148,51 @@
   with_items: "{{ topology.instances }}"
   when: '"vmx" in item.flavor and item.host_id== id'
 
+- name: restart libvirtd to fix iptables rules
+  systemd:
+    state: restarted
+    name: libvirtd
+    enabled: True
+    
 - name: Start VMX instances
   virt:
       name: "{{ item.name }}"
       state: running
       autostart: yes
-  with_items: "{{ topology.instances }}"
-  when: '"vmx" in item.flavor and item.host_id== id'
+  with_items: "{{ vmx_list }}"
+  when: 'item.host_id== id'
 
+
+    
 #
 #       Spawn Linux instances
 #
-
-- name: Ansible prepare Linux disks based on local Linux copy
-  copy:
-    src: /tmp/{{ os_image_name }}
-    dest: /var/lib/libvirt/images/{{ item.name }}-{{ os_image_name }}
-    remote_src: yes
-    force: no
-  with_items: "{{ topology.instances }}"
-  when: '"os" in item.flavor and item.host_id== id'
-
-- name: Define Linux Images
-  virt:
-      name: "{{ item.name }}"
-      command: define
-      xml: "{{ lookup('template', 'templates/virsh-linux.xml.j2') }}"
-  with_items: "{{ topology.instances }}"
-  when: '"os" in item.flavor and item.host_id== id'
-
-- name: Start Linux Instances
-  virt:
-      name: "{{ item.name }}"
-      state: running
-      autostart: yes
-  with_items: "{{ topology.instances }}"
-  when: '"os" in item.flavor and item.host_id== id'
-
+#
+#- name: Ansible prepare Linux disks based on local Linux copy
+#  copy:
+#    src: /tmp/{{ os_image_name }}
+#    dest: /var/lib/libvirt/images/{{ item.name }}-{{ os_image_name }}
+#    remote_src: yes
+#    force: no
+#  with_items: "{{ topology.instances }}"
+#  when: '"os" in item.flavor and item.host_id== id'
+#
+#- name: Define Linux Images
+#  virt:
+#      name: "{{ item.name }}"
+#      command: define
+#      xml: "{{ lookup('template', 'templates/virsh-linux.xml.j2') }}"
+#  with_items: "{{ topology.instances }}"
+#  when: '"os" in item.flavor and item.host_id== id'
+#
+#- name: Start Linux Instances
+#  virt:
+#      name: "{{ item.name }}"
+#      state: running
+#      autostart: yes
+#  with_items: "{{ topology.instances }}"
+#  when: '"os" in item.flavor and item.host_id== id'
+#
 - name: Creating Readme file with topology information (topology-readme.txt)
   template:
     src: 'templates/topology-recap.j2'

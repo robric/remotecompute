@@ -1,19 +1,4 @@
 ---
-# tasks file for vmx_config
-
-
-- name: Create fact for managing VMX
-  set_fact:
-    vmx_list: "{{ vmx_list | default ([]) + [{ 'name':item.0.name, 'vm_id':item.0.vm_id, 'host_ip':hostvars[item.1].ansible_host, 'console_port':'40''%02d'|format(item.0.vm_id), 'mgt_ip':'192.168.122.1''%02d'|format(item.0.vm_id), 'host_id':item.0.host_id }] }}"
-  with_nested:
-    - "{{ topology.instances }}"
-    - "{{ groups.kvm_hosts }}"
-  when: '"vmx" in item.0.flavor and hostvars[item.1].id == item.0.host_id'
-  delegate_to: 127.0.0.1
-  run_once: yes
-  
-- debug: var=vmx_list
-  run_once: yes
   
 #
 # FIXME - this is static and ugly for now - enhancement with dynamic inventory
@@ -44,7 +29,7 @@
   register: commit
   
 - debug: 
-    msg: "Commit output: {{commit.stdout}}"
+    msg: "Commit output: {{commit}}"
   
   
 

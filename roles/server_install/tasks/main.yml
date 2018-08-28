@@ -14,6 +14,7 @@
       ==
       topology.instances | map (attribute='vm_id') | list | unique | count
     msg: "Error: duplicate vm_id"
+  delegate_to: 127.0.0.1
   run_once: true
 
 - name: Validate that instance names are unique
@@ -23,6 +24,7 @@
       ==
       topology.instances | map (attribute='name') | list | unique | count
     msg: "Error: duplicate instance name"
+  delegate_to: 127.0.0.1
   run_once: true
     
 - name: Validate that vm_id is in [0..99] range
@@ -31,8 +33,12 @@
       - topology.instances | map (attribute='vm_id') | list | max < 100
       - topology.instances | map (attribute='name') | list | min  >= 0
     msg: "error: vm_id range is [0..99]"
+  delegate_to: 127.0.0.1
   run_once: true
       
+
+
+  
 # Package installation and daemon start
 
 - name: Install core repos and packages on hosts
@@ -71,12 +77,26 @@
 - name: Install python lxml module for ansible virt_net (pip)
   pip:
     name: lxml
-    
+
+#  iptables is impacting VXLAN forwarding   
+#  However it is required for NAT forwarding 
+#  Keeping this in comment in case we need it again
+#
+#
 - name: Stop iptables
   systemd:
     state: stopped
     name: firewalld
     enabled: False
+      
+#      iptables -I INPUT -j ACCEPT
+#      iptables -I FORWARD -j ACCEPT
+#      /sbin/iptables-save
+#      
+#    
+#
+#
+#
 
 - name: Start libvirt
   systemd:
@@ -131,28 +151,25 @@
     url: "{{ vmx_download_url }}/{{ vmx_image_name }}"
     dest: /tmp/{{ vmx_image_name }}
 
+#- name: Copy {{ os_image_name }} to local server 
+#  get_url:
+#    url: "{{ os_download_url }}/{{ os_image_name }}"
+#    dest: /tmp/{{ os_image_name }}
+#- name: Customize Linux image (enabling ssh / root password "c0ntrail123")
+#  shell: | 
+#    virt-customize -a /tmp/{{ os_image_name }} \
+#    --root-password password:c0ntrail123 \
+#    --hostname linux-vm \
+#    --run-command 'sed -i "s/PasswordAuthentication no/PasswordAuthentication yes/g" /etc/ssh/sshd_config' \
+#    --run-command 'systemctl enable sshd' \
+#    --run-command 'yum remove -y cloud-init' \
+#    --selinux-relabel \
+#  register: customized
 
-- name: Copy {{ os_image_name }} to local server 
-  get_url:
-    url: "{{ os_download_url }}/{{ os_image_name }}"
-    dest: /tmp/{{ os_image_name }}
-
-
-- name: Customize Linux image (enabling ssh / root password "c0ntrail123")
-  shell: | 
-    virt-customize -a /tmp/{{ os_image_name }} \
-    --root-password password:c0ntrail123 \
-    --hostname linux-vm \
-    --run-command 'sed -i "s/PasswordAuthentication no/PasswordAuthentication yes/g" /etc/ssh/sshd_config' \
-    --run-command 'systemctl enable sshd' \
-    --run-command 'yum remove -y cloud-init' \
-    --selinux-relabel \
-  register: customized
-
-- name: Display shell customisation output for Linux
-  debug: 
-    msg: "Output for virt-customize: {{customized.stdout}}"
-
+#- name: Display shell customisation output for Linux
+#  debug: 
+#    msg: "Output for virt-customize: {{customized.stdout}}"
+#
 - name: Customize VMX image (enabling ssh / root password "root123")
   shell: | 
     virt-copy-in -a  /tmp/{{ vmx_image_name }} /tmp/metadata-usb.img /home/pfe/junos/
@@ -162,16 +179,7 @@
   debug: 
     msg: "Output for virt-customize: {{customized.stdout}}"
 
-#
-#        Define OVS bridges on KVM hosts
-#
 
-- name: Create network scripts for OVS bridges on KVM hosts
-  template:
-    src: "templates/vxlan_bridge.j2"
-    dest: "/etc/sysconfig/network-scripts/ifcfg-br-{{ item.key }}"
-  with_dict: "{{ topology.networks }}"
-  
 
 
 

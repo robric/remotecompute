@@ -4,6 +4,7 @@
 
 - hosts: kvm_hosts
   roles:
+     - create_facts
      - server_install
 
 # Define VXLAN overlay topology between hosts (Hub and Spoke)
@@ -22,3 +23,7 @@
   roles:
      - define_vms
      - vmx_config
+
+- hosts: hub_vxlan
+  roles:
+     - install_via_hub

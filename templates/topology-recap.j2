@@ -17,7 +17,7 @@ Hostname            Host_Id
 
 Instance Name       SSH IP address      Running Host        Console port (telnet)
 {% for item in topology.instances %}
-{{ '%-19s' | format (item.name) }} 192.168.122.1{{'%02d' | format (item.vm_id)}}     {{ '%-19d' | format (item.host_id) }} 40{{ '%02d' | format (item.vm_id) }}
+{{ '%-19s' | format (item.name) }} 192.168.122.2{{'%02d' | format (item.vm_id)}}     {{ '%-19d' | format (item.host_id) }} 40{{ '%02d' | format (item.vm_id) }}
 {% endfor %}
 
 [Interface Connectivity]
